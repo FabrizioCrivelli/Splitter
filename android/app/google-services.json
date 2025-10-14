@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "977980943339",
+    "project_id": "splitear-app",
+    "storage_bucket": "splitear-app.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:977980943339:android:6e573a6b64bbfd2b9287ae",
+        "android_client_info": {
+          "package_name": "com.example.splitear_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCWb-BvjrEUcu5bssmRr0ErUzxpa3_6FCo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
