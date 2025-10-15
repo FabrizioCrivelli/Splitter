@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../providers/expenses_provider.dart';
+import '../providers/expenses_repository.dart';
 import '../models/expense_item.dart';
 
 class ExpensesScreen extends ConsumerWidget {
@@ -8,7 +8,7 @@ class ExpensesScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final expenses = ref.watch(expensesProvider);
+    final expensesAsync = ref.watch(expensesStreamProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -16,40 +16,45 @@ class ExpensesScreen extends ConsumerWidget {
         actions: [
           IconButton(
             tooltip: 'Borrar todo',
-            onPressed: () => ref.read(expensesProvider.notifier).clear(),
+            onPressed: () => ref.read(expensesRepoProvider).clear(),
             icon: const Icon(Icons.delete_sweep),
           ),
         ],
       ),
-      body: expenses.isEmpty
-          ? const _EmptyState()
-          : ListView.separated(
-              padding: const EdgeInsets.all(12),
-              itemCount: expenses.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 8),
-              itemBuilder: (context, index) {
-                final ExpenseItem item = expenses[index];
-                return Dismissible(
-                  key: ValueKey('${item.product}-$index'),
-                  direction: DismissDirection.endToStart,
-                  onDismissed: (_) =>
-                      ref.read(expensesProvider.notifier).removeAt(index),
-                  background: Container(
-                    alignment: Alignment.centerRight,
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    color: Colors.redAccent,
-                    child: const Icon(Icons.delete, color: Colors.white),
+      body: expensesAsync.when(
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (e, _) => Center(child: Text('Error: $e')),
+        data: (expenses) {
+          if (expenses.isEmpty) return const _EmptyState();
+          return ListView.separated(
+            padding: const EdgeInsets.all(12),
+            itemCount: expenses.length,
+            separatorBuilder: (_, __) => const SizedBox(height: 8),
+            itemBuilder: (context, index) {
+              final ExpenseItem item = expenses[index];
+              return Dismissible(
+                key: ValueKey(item.id),
+                direction: DismissDirection.endToStart,
+                onDismissed: (_) =>
+                    ref.read(expensesRepoProvider).remove(item.id),
+                background: Container(
+                  alignment: Alignment.centerRight,
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  color: Colors.redAccent,
+                  child: const Icon(Icons.delete, color: Colors.white),
+                ),
+                child: Card(
+                  child: ListTile(
+                    title: Text(item.product),
+                    subtitle: Text('Persona: ${item.person}'),
+                    trailing: Text('\$ ${item.amount.toStringAsFixed(2)}'),
                   ),
-                  child: Card(
-                    child: ListTile(
-                      title: Text(item.product),
-                      subtitle: Text('Persona: ${item.person}'),
-                      trailing: Text('\$ ${item.amount.toStringAsFixed(2)}'),
-                    ),
-                  ),
-                );
-              },
-            ),
+                ),
+              );
+            },
+          );
+        },
+      ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _openAddDialog(context, ref),
         icon: const Icon(Icons.add),
@@ -72,41 +77,28 @@ class ExpensesScreen extends ConsumerWidget {
           children: [
             TextField(
               controller: productCtrl,
-              decoration: const InputDecoration(
-                labelText: 'Producto',
-                hintText: 'Ej: Pizza grande',
-              ),
+              decoration: const InputDecoration(labelText: 'Producto'),
               textInputAction: TextInputAction.next,
             ),
             TextField(
               controller: amountCtrl,
-              decoration: const InputDecoration(
-                labelText: 'Total gastado',
-                hintText: 'Ej: 8500.00',
-              ),
-              keyboardType:
-                  const TextInputType.numberWithOptions(decimal: true),
+              decoration: const InputDecoration(labelText: 'Total gastado'),
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
               textInputAction: TextInputAction.next,
             ),
             TextField(
               controller: personCtrl,
-              decoration: const InputDecoration(
-                labelText: 'Persona',
-                hintText: 'Ej: Michael',
-              ),
+              decoration: const InputDecoration(labelText: 'Persona'),
               textInputAction: TextInputAction.done,
-              onSubmitted: (_) => _submit(ref, productCtrl, amountCtrl, personCtrl, context),
+              onSubmitted: (_) =>
+                  _submit(ref, productCtrl, amountCtrl, personCtrl, context),
             ),
           ],
         ),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancelar'),
-          ),
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancelar')),
           FilledButton(
-            onPressed: () =>
-                _submit(ref, productCtrl, amountCtrl, personCtrl, context),
+            onPressed: () => _submit(ref, productCtrl, amountCtrl, personCtrl, context),
             child: const Text('Agregar'),
           ),
         ],
@@ -121,22 +113,21 @@ class ExpensesScreen extends ConsumerWidget {
     TextEditingController personCtrl,
     BuildContext context,
   ) {
-    final product = productCtrl.text;
-    final person = personCtrl.text;
-
+    final product = productCtrl.text.trim();
+    final person = personCtrl.text.trim();
     final parsed = double.tryParse(amountCtrl.text.replaceAll(',', '.'));
-    if (parsed == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Ingresá un total válido.')),
-      );
+
+    if (product.isEmpty || person.isEmpty || parsed == null) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('Verificá los datos.')));
       return;
     }
 
-    ref.read(expensesProvider.notifier).addExpense(
-          product: product,
-          amount: parsed,
-          person: person,
-        );
+    ref.read(expensesRepoProvider).add(
+      product: product,
+      amount: parsed,
+      person: person,
+    );
 
     Navigator.pop(context);
   }
