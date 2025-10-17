@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'firebase_options.dart'; // generado por `flutterfire configure`
+import 'firebase_options.dart'; 
 import 'screens/expenses_screen.dart';
 
 Future<void> main() async {
@@ -17,7 +17,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Tricount Simple',
+      title: 'SmartSpliter',
       theme: ThemeData(
         colorSchemeSeed: Colors.indigo,
         useMaterial3: true,
