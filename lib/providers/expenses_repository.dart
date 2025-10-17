@@ -25,9 +25,9 @@ class ExpensesRepository {
     required String person,
   }) {
     return _col(groupId).add({
-      'product': product.trim(),
-      'amount': amount,
-      'person': person.trim(),
+      'producto': product.trim(),
+      'precio': amount,
+      'persona': person.trim(),
       'createdAt': FieldValue.serverTimestamp(),
     });
   }
